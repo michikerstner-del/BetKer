@@ -3,14 +3,18 @@ import psycopg2
 import streamlit as st
 import json
 
-# Hilfsfunktion, um ID zu finden oder neu anzulegen
 def get_or_create_id(cur, table, name):
+    if not name or name == "TBD":
+        return None
+    # Suche nach dem Namen
     cur.execute(f"SELECT id FROM public.{table} WHERE name = %s", (name,))
     result = cur.fetchone()
     if result:
         return result[0]
+    # Falls nicht gefunden, lege es an
     cur.execute(f"INSERT INTO public.{table} (name) VALUES (%s) RETURNING id", (name,))
-    return cur.fetchone()[0]
+    new_id = cur.fetchone()[0]
+    return new_id
 
 def fetch_and_save_data():
     api_key = st.secrets["c90be3756d4c4577be201d8c38701831"]
@@ -25,18 +29,17 @@ def fetch_and_save_data():
         cur = conn.cursor()
         
         count = 0
-        for match in data['matches']:
-            # Extrahiere Namen aus der API-Antwort
-            home_name = match.get('homeTeam', {}).get('name', 'TBD')
-            away_name = match.get('awayTeam', {}).get('name', 'TBD')
-            stadium_name = match.get('venue', 'TBD')
+        for match in data.get('matches', []):
+            home_name = match.get('homeTeam', {}).get('name')
+            away_name = match.get('awayTeam', {}).get('name')
+            stadium_name = match.get('venue')
             
-            # IDs holen/erstellen
-            home_id = get_or_create_id(cur, "teams", home_name) if home_name != 'TBD' else None
-            away_id = get_or_create_id(cur, "teams", away_name) if away_name != 'TBD' else None
-            stad_id = get_or_create_id(cur, "stadiums", stadium_name) if stadium_name != 'TBD' else None
+            # IDs abrufen
+            h_id = get_or_create_id(cur, "teams", home_name)
+            a_id = get_or_create_id(cur, "teams", away_name)
+            s_id = get_or_create_id(cur, "stadiums", stadium_name)
             
-            # Upsert (Einfügen oder bei Konflikt aktualisieren)
+            # Daten in 'matches' einfügen
             cur.execute("""
                 INSERT INTO public.matches (api_id, match_date, home_team_id, away_team_id, stadium_id, external_data)
                 VALUES (%s, %s, %s, %s, %s, %s)
@@ -45,12 +48,12 @@ def fetch_and_save_data():
                     away_team_id = EXCLUDED.away_team_id,
                     stadium_id = EXCLUDED.stadium_id,
                     external_data = EXCLUDED.external_data;
-            """, (str(match['id']), match['utcDate'], home_id, away_id, stad_id, json.dumps(match)))
+            """, (str(match['id']), match['utcDate'], h_id, a_id, s_id, json.dumps(match)))
             count += 1
         
         conn.commit()
         cur.close()
         conn.close()
-        return f"Erfolg: {count} Spiele inkl. Mapping verarbeitet."
+        return f"Erfolg: {count} Spiele verarbeitet und IDs gemappt."
     except Exception as e:
         return f"Fehler: {str(e)}"
