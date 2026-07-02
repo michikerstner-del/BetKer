@@ -1,3 +1,4 @@
+
 name: Data Sync
 on:
   workflow_dispatch: # Erlaubt dir, das Skript manuell auf dem iPhone zu starten
