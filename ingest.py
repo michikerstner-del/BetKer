@@ -4,7 +4,7 @@ import streamlit as st
 import json
 
 def fetch_and_save_data():
-    api_key = st.secrets["FOOTBALL_DATA_API_KEY"]
+    api_key = st.secrets["c90be3756d4c4577be201d8c38701831"]
     headers = {'X-Auth-Token': api_key}
     url = "https://api.football-data.org/v4/competitions/WC/matches"
     
@@ -17,15 +17,17 @@ def fetch_and_save_data():
         matches = data.get('matches', [])
         
         if not matches:
-            return "API-Sync: Keine Spiele gefunden (vielleicht falscher Wettbewerbs-Code?)"
+            return "API-Sync: API lieferte keine Spiele. Wettbewerbscode korrekt?"
 
+        # Verbindung herstellen
         conn = psycopg2.connect(st.secrets["SUPABASE_URL"], sslmode='require')
         cur = conn.cursor()
         
         count = 0
         for match in matches:
+            # WICHTIG: Verwende die Anführungszeichen für den Tabellennamen
             cur.execute("""
-                INSERT INTO public.matches (api_id, match_date, external_data)
+                INSERT INTO public."matches" (api_id, match_date, external_data)
                 VALUES (%s, %s, %s)
                 ON CONFLICT (api_id) DO UPDATE 
                 SET external_data = EXCLUDED.external_data;
@@ -38,4 +40,4 @@ def fetch_and_save_data():
         return f"Erfolg: {count} Spiele in die Datenbank geschrieben."
     
     except Exception as e:
-        return f"Fehler bei DB-Verbindung: {str(e)}"
+        return f"DB-Fehler: {str(e)}"
