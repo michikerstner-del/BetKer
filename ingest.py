@@ -1,28 +1,14 @@
-import os
-import requests
 import psycopg2
+import streamlit as st
 
-def run_ingestion():
-    # Verbindung
-    conn = psycopg2.connect(os.environ['SUPABASE_URL'])
+def test_verbindung():
+    conn = psycopg2.connect(st.secrets["SUPABASE_URL"], sslmode='require')
     cur = conn.cursor()
-
-    # Beispiel: API-Football abfragen
-    url = "https://v3.football.api-sports.io/fixtures?league=1&season=2026"
-    headers = {'x-rapidapi-key': os.environ['API_FOOTBALL_KEY'], 'x-rapidapi-host': 'v3.football.api-sports.io'}
-    response = requests.get(url, headers=headers).json()
-
-    # Daten einfügen
-    for match in response['response'][:5]: # Wir nehmen nur die ersten 5 als Test
-        cur.execute(
-            "INSERT INTO matches (match_date, home_team, away_team, league_name, api_source) VALUES (%s, %s, %s, %s, %s)",
-            (match['fixture']['date'], match['teams']['home']['name'], match['teams']['away']['name'], "WM 2026", "API-Football")
-        )
-
+    # Test-Eintrag
+    cur.execute("INSERT INTO public.teams (name, group_name) VALUES ('Deutschland', 'A') ON CONFLICT DO NOTHING;")
     conn.commit()
     cur.close()
     conn.close()
-    print("Daten erfolgreich in die Tabelle geschrieben!")
+    return "Erfolg: Deutschland ist in der DB!"
 
-if __name__ == "__main__":
-    run_ingestion()
+print(test_verbindung())
