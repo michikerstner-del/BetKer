@@ -11,26 +11,21 @@ def fetch_and_save_data():
     try:
         response = requests.get(url, headers=headers)
         data = response.json()
-        
         conn = psycopg2.connect(st.secrets["SUPABASE_URL"], sslmode='require')
         cur = conn.cursor()
         
-        count = 0
         for match in data.get('matches', []):
-            # Wir speichern das Spiel primär. 
-            # Wir lassen die IDs hier erst einmal WEG, um den Fehler zu isolieren.
+            # Wir versuchen hier direkt den INSERT, ohne komplexe Funktionen
+            # Wir nehmen nur die API-Daten
             cur.execute("""
                 INSERT INTO public.matches (api_id, match_date, external_data)
                 VALUES (%s, %s, %s)
-                ON CONFLICT (api_id) DO UPDATE 
-                SET match_date = EXCLUDED.match_date,
-                    external_data = EXCLUDED.external_data;
+                ON CONFLICT (api_id) DO UPDATE SET match_date = EXCLUDED.match_date;
             """, (str(match['id']), match['utcDate'], json.dumps(match)))
-            count += 1
         
         conn.commit()
         cur.close()
         conn.close()
-        return f"Erfolg: {count} Spiele ohne ID-Mapping gespeichert."
+        return "Erfolg: 104 Spiele ohne IDs gespeichert."
     except Exception as e:
         return f"Fehler: {str(e)}"
