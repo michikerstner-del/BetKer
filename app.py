@@ -24,9 +24,9 @@ def get_data():
             t2.name AS away_team, 
             s.name AS stadium
         FROM public.matches m
-        LEFT JOIN public.teams t1 ON m.home_team_id = t1.id
-        LEFT JOIN public.teams t2 ON m.away_team_id = t2.id
-        LEFT JOIN public.stadiums s ON m.stadium_id = s.id
+        INNER JOIN public.teams t1 ON m.home_team_id = t1.id
+        INNER JOIN public.teams t2 ON m.away_team_id = t2.id
+        INNER JOIN public.stadiums s ON m.stadium_id = s.id
         ORDER BY m.match_date ASC;
         """
 
