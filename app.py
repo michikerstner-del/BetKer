@@ -7,8 +7,9 @@ st.title("⚽ WM 2026 Analytics Dashboard")
 
 @st.cache_resource
 def get_data():
-    # Wir nutzen hier den Connection String aus dem Secret
-    conn = psycopg2.connect(st.secrets["SUPABASE_URL"])
+    # Aufbau der Verbindung aus den Einzelteilen
+    conn_str = f"postgresql://{st.secrets['DB_USER']}:{st.secrets['DB_PASS']}@{st.secrets['DB_HOST']}:{st.secrets['DB_PORT']}/{st.secrets['DB_NAME']}"
+    conn = psycopg2.connect(conn_str)
     query = "SELECT * FROM matches ORDER BY match_date ASC"
     df = pd.read_sql(query, conn)
     conn.close()
