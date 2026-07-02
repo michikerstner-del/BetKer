@@ -13,17 +13,19 @@ if "SUPABASE_URL" not in st.secrets:
 @st.cache_resource
 def get_data():
     try:
-        # Wir nutzen den Pooler-Hostnamen und zwingen SSL-Verschlüsselung
+        # Wir nutzen den vollständigen Hostnamen für die SSL-SNI-Validierung
+        host = "aws-1-eu-central-1.pooler.supabase.com"
         conn = psycopg2.connect(
             st.secrets["SUPABASE_URL"],
-            sslmode='require',
-            connect_timeout=10
+            sslmode='verify-full',
+            sslrootcert='/etc/ssl/certs/ca-certificates.crt',
+            options=f'-c host={host}'
         )
         df = pd.read_sql("SELECT * FROM matches ORDER BY match_date ASC", conn)
         conn.close()
         return df
     except Exception as e:
-        st.error(f"Verbindungs-Fehler: {e}")
+        st.error(f"Datenbankfehler: {e}")
         return None
 
 df = get_data()
