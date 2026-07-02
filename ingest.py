@@ -13,7 +13,7 @@ def get_or_create_id(cur, table, name):
     return cur.fetchone()[0]
 
 def fetch_and_save_data():
-    api_key = st.secrets["FOOTBALL_DATA_API_KEY"]
+    api_key = st.secrets["c90be3756d4c4577be201d8c38701831"]
     headers = {'X-Auth-Token': api_key}
     url = "https://api.football-data.org/v4/competitions/WC/matches"
     
