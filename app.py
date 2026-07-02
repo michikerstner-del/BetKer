@@ -19,7 +19,7 @@ def get_data():
             st.secrets["SUPABASE_URL"],
             sslmode='require' # Anstatt 'verify-full' nur 'require'
         )
-        df = pd.read_sql("SELECT * FROM matches ORDER BY match_date ASC", conn)
+        df = pd.read_sql("SELECT * FROM public.matches ORDER BY match_date ASC", conn)
         conn.close()
         return df
     except Exception as e:
