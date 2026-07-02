@@ -11,26 +11,22 @@ def fetch_and_save_data():
     try:
         response = requests.get(url, headers=headers)
         data = response.json()
+        
+        # Test: Drucke die ersten 3 Teamnamen in die Streamlit-Konsole
+        matches = data.get('matches', [])
+        print(f"DEBUG: Gefundene Spiele: {len(matches)}")
+        if len(matches) > 0:
+            print(f"DEBUG: Erstes Heimteam: {matches[0].get('homeTeam', {}).get('name')}")
+            
         conn = psycopg2.connect(st.secrets["SUPABASE_URL"], sslmode='require')
         cur = conn.cursor()
         
-        # 1. Wir legen erst manuell ein Test-Team an, um zu sehen, ob das Skript schreiben kann
-        cur.execute("INSERT INTO public.teams (name) VALUES ('TestTeam') ON CONFLICT DO NOTHING;")
+        # Nur ein Test-INSERT für ein einziges Team, um Rechte zu prüfen
+        cur.execute("INSERT INTO public.teams (name) VALUES ('TestTeam-2') ON CONFLICT (name) DO NOTHING;")
         conn.commit()
         
-        count = 0
-        for match in data.get('matches', []):
-            # Wir schreiben das Spiel in die DB
-            cur.execute("""
-                INSERT INTO public.matches (api_id, match_date, external_data)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (api_id) DO UPDATE SET match_date = EXCLUDED.match_date;
-            """, (str(match['id']), match['utcDate'], json.dumps(match)))
-            count += 1
-            
-        conn.commit()
         cur.close()
         conn.close()
-        return f"Erfolg: {count} Spiele gespeichert. Prüfe jetzt, ob 'TestTeam' in der Tabelle 'teams' existiert."
+        return f"Erfolg: {len(matches)} Spiele gefunden. Prüfe die Tabelle 'teams' auf 'TestTeam-2'."
     except Exception as e:
         return f"Fehler: {str(e)}"
