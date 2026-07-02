@@ -24,11 +24,12 @@ def get_data():
             t2.name AS away_team, 
             s.name AS stadium
         FROM public.matches m
-        JOIN public.teams t1 ON m.home_team_id = t1.id
-        JOIN public.teams t2 ON m.away_team_id = t2.id
-        JOIN public.stadiums s ON m.stadium_id = s.id
+        LEFT JOIN public.teams t1 ON m.home_team_id = t1.id
+        LEFT JOIN public.teams t2 ON m.away_team_id = t2.id
+        LEFT JOIN public.stadiums s ON m.stadium_id = s.id
         ORDER BY m.match_date ASC;
         """
+
         df = pd.read_sql(query, conn)
         conn.close()
         return df
