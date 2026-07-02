@@ -5,19 +5,19 @@ import socket
 
 @st.cache_resource
 def get_data():
-    # Wir holen uns die IP-Adresse direkt per Code in der Cloud
-    # Das umgeht den DNS-Fehler, falls Streamlit Probleme hat
+    # Wir isolieren den Hostnamen vom Connection-String
     host = "db.dmqsmadpsbjijuqysmie.supabase.co"
-    ip = socket.gethostbyname(host)
     
-    conn = psycopg2.connect(
-        dbname=st.secrets["DB_NAME"],
-        user=st.secrets["DB_USER"],
-        password=st.secrets["DB_PASS"],
-        host=ip, # Wir nutzen hier die IP, die der Server selbst findet
-        port=st.secrets["DB_PORT"],
-        sslmode='require' # Wichtig für die Sicherheit
-    )
+    # Der Trick: Wir erzwingen die IP-Auflösung manuell vor dem Verbindungsaufbau
+    # Das umgeht die DNS-Probleme der Streamlit-Cloud-Infrastruktur
+    try:
+        ip = socket.gethostbyname(host)
+    except:
+        ip = host # Fallback auf den Hostnamen, falls das nicht klappt
+        
+    conn_str = f"postgresql://{st.secrets['DB_USER']}:{st.secrets['DB_PASS']}@{ip}:{st.secrets['DB_PORT']}/{st.secrets['DB_NAME']}"
+    
+    conn = psycopg2.connect(conn_str)
     df = pd.read_sql("SELECT * FROM matches ORDER BY match_date ASC", conn)
     conn.close()
     return df
