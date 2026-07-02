@@ -3,8 +3,8 @@ import psycopg2
 import streamlit as st
 import json
 
+# Hilfsfunktion, um ID zu finden oder neu anzulegen
 def get_or_create_id(cur, table, name):
-    # Hilfsfunktion, um ID zu finden oder neu anzulegen
     cur.execute(f"SELECT id FROM public.{table} WHERE name = %s", (name,))
     result = cur.fetchone()
     if result:
@@ -26,17 +26,17 @@ def fetch_and_save_data():
         
         count = 0
         for match in data['matches']:
-            # Extrahiere Namen
+            # Extrahiere Namen aus der API-Antwort
             home_name = match.get('homeTeam', {}).get('name', 'TBD')
             away_name = match.get('awayTeam', {}).get('name', 'TBD')
             stadium_name = match.get('venue', 'TBD')
             
-            # IDs holen
+            # IDs holen/erstellen
             home_id = get_or_create_id(cur, "teams", home_name) if home_name != 'TBD' else None
             away_id = get_or_create_id(cur, "teams", away_name) if away_name != 'TBD' else None
             stad_id = get_or_create_id(cur, "stadiums", stadium_name) if stadium_name != 'TBD' else None
             
-            # Update Spiel mit IDs
+            # Upsert (Einfügen oder bei Konflikt aktualisieren)
             cur.execute("""
                 INSERT INTO public.matches (api_id, match_date, home_team_id, away_team_id, stadium_id, external_data)
                 VALUES (%s, %s, %s, %s, %s, %s)
@@ -51,6 +51,6 @@ def fetch_and_save_data():
         conn.commit()
         cur.close()
         conn.close()
-        return f"Erfolg: {count} Spiele verarbeitet."
+        return f"Erfolg: {count} Spiele inkl. Mapping verarbeitet."
     except Exception as e:
-        return f"Fehler: {e}"
+        return f"Fehler: {str(e)}"
