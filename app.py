@@ -13,10 +13,10 @@ if "SUPABASE_URL" not in st.secrets:
 @st.cache_resource
 def get_data():
     try:
-        # Wir übergeben den Hostnamen im 'options'-Parameter für SSL
+        # Wir setzen explizit connect_timeout=5, um bei Hängern sofort einen Fehler zu erhalten
         conn = psycopg2.connect(
             st.secrets["SUPABASE_URL"],
-            options="-c host=db.dmqsmadpsbjijuqysmie.supabase.co"
+            connect_timeout=5
         )
         df = pd.read_sql("SELECT * FROM matches ORDER BY match_date ASC", conn)
         conn.close()
