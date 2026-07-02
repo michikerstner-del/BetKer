@@ -2,37 +2,27 @@ import os
 import requests
 import psycopg2
 
-# 1. Verbindung zur Datenbank herstellen
-def get_db_connection():
-    return psycopg2.connect(os.environ['SUPABASE_URL'])
+def run_ingestion():
+    # Verbindung
+    conn = psycopg2.connect(os.environ['SUPABASE_URL'])
+    cur = conn.cursor()
 
-# 2. Daten von API-Football abrufen (Beispiel für Spielpläne)
-def fetch_api_football():
+    # Beispiel: API-Football abfragen
     url = "https://v3.football.api-sports.io/fixtures?league=1&season=2026"
     headers = {'x-rapidapi-key': os.environ['API_FOOTBALL_KEY'], 'x-rapidapi-host': 'v3.football.api-sports.io'}
-    response = requests.get(url, headers=headers)
-    return response.json().get('response', [])
+    response = requests.get(url, headers=headers).json()
 
-# 3. Haupt-Logik
-def run_ingestion():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # Beispiel: Daten abrufen
-    matches = fetch_api_football()
-    
-    # Beispiel: Daten in die DB schreiben
-    for match in matches:
-        date = match['fixture']['date']
-        home = match['teams']['home']['name']
-        away = match['teams']['away']['name']
-        
-        cur.execute("INSERT INTO matches (match_date) VALUES (%s)", (date,))
-        
+    # Daten einfügen
+    for match in response['response'][:5]: # Wir nehmen nur die ersten 5 als Test
+        cur.execute(
+            "INSERT INTO matches (match_date, home_team, away_team, league_name, api_source) VALUES (%s, %s, %s, %s, %s)",
+            (match['fixture']['date'], match['teams']['home']['name'], match['teams']['away']['name'], "WM 2026", "API-Football")
+        )
+
     conn.commit()
     cur.close()
     conn.close()
-    print("Daten erfolgreich verarbeitet!")
+    print("Daten erfolgreich in die Tabelle geschrieben!")
 
 if __name__ == "__main__":
     run_ingestion()
