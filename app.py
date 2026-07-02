@@ -13,16 +13,17 @@ if "SUPABASE_URL" not in st.secrets:
 @st.cache_resource
 def get_data():
     try:
-        # Wir setzen explizit connect_timeout=5, um bei Hängern sofort einen Fehler zu erhalten
+        # Wir nutzen den Pooler-Hostnamen und zwingen SSL-Verschlüsselung
         conn = psycopg2.connect(
             st.secrets["SUPABASE_URL"],
-            connect_timeout=5
+            sslmode='require',
+            connect_timeout=10
         )
         df = pd.read_sql("SELECT * FROM matches ORDER BY match_date ASC", conn)
         conn.close()
         return df
     except Exception as e:
-        st.error(f"Datenbankfehler: {e}")
+        st.error(f"Verbindungs-Fehler: {e}")
         return None
 
 df = get_data()
