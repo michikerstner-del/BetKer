@@ -42,3 +42,16 @@ if df is not None and not df.empty:
     st.dataframe(df, use_container_width=True)
 else:
     st.write("Noch keine verknüpften Daten gefunden. Stelle sicher, dass Teams und Stadien in der DB angelegt und mit einem Spiel verknüpft sind.")
+
+# Test-Button für den Handschlag
+if st.sidebar.button("Datenbank-Test: Team hinzufügen"):
+    try:
+        conn = psycopg2.connect(st.secrets["SUPABASE_URL"], sslmode='require')
+        cur = conn.cursor()
+        cur.execute("INSERT INTO public.teams (name, group_name) VALUES ('Deutschland', 'A') ON CONFLICT DO NOTHING;")
+        conn.commit()
+        cur.close()
+        conn.close()
+        st.sidebar.success("Erfolg! Deutschland wurde in die DB geschrieben.")
+    except Exception as e:
+        st.sidebar.error(f"Fehler: {e}")
