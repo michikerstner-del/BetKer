@@ -4,17 +4,18 @@ import streamlit as st
 import json
 
 def get_or_create_team(cur, team_name):
-    # Prüfen, ob Team existiert
+    # Prüfen, ob Team bereits existiert
     cur.execute("SELECT id FROM public.teams WHERE name = %s", (team_name,))
     result = cur.fetchone()
     if result:
         return result[0]
-    # Wenn nicht, neu anlegen und ID zurückgeben
+    
+    # Wenn nicht, neu anlegen
     cur.execute("INSERT INTO public.teams (name) VALUES (%s) RETURNING id", (team_name,))
     return cur.fetchone()[0]
 
 def fetch_and_save_data():
-    api_key = st.secrets["c90be3756d4c4577be201d8c38701831"]
+    api_key = st.secrets["FOOTBALL_DATA_API_KEY"]
     headers = {'X-Auth-Token': api_key}
     url = "https://api.football-data.org/v4/competitions/WC/matches"
     
@@ -32,14 +33,14 @@ def fetch_and_save_data():
         count = 0
         for match in matches:
             # Team-Namen aus API extrahieren
-            home_name = match['homeTeam']['name']
-            away_name = match['awayTeam']['name']
+            home_name = match.get('homeTeam', {}).get('name', 'TBD')
+            away_name = match.get('awayTeam', {}).get('name', 'TBD')
             
-            # IDs über unsere Hilfsfunktion holen
-            home_id = get_or_create_team(cur, home_name)
-            away_id = get_or_create_team(cur, away_name)
+            # IDs holen/erstellen
+            home_id = get_or_create_team(cur, home_name) if home_name != 'TBD' else None
+            away_id = get_or_create_team(cur, away_name) if away_name != 'TBD' else None
             
-            # Spiel speichern
+            # Spiel speichern (mit verknüpften IDs)
             cur.execute("""
                 INSERT INTO public."matches" (api_id, match_date, home_team_id, away_team_id, external_data)
                 VALUES (%s, %s, %s, %s, %s)
@@ -53,7 +54,7 @@ def fetch_and_save_data():
         conn.commit()
         cur.close()
         conn.close()
-        return f"Erfolg: {count} Spiele inkl. Teams synchronisiert."
+        return f"Erfolg: {count} Spiele inklusive Team-Verknüpfungen verarbeitet."
     
     except Exception as e:
         return f"Fehler: {str(e)}"
