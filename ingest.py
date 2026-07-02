@@ -29,9 +29,7 @@ def fetch_and_save_data():
         cur.close()
         conn.close()
         return f"Erfolg: {len(data['matches'])} Spiele verarbeitet."
+    
+    # Ändere den except-Block in ingest.py kurz so:
     except Exception as e:
-        return f"Fehler: {e}"
-
-# Ruf die Funktion auf
-if __name__ == "__main__":
-    print(fetch_and_save_data())
+        return f"Fehler: {str(e)}" 
