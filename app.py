@@ -55,3 +55,10 @@ if st.sidebar.button("Datenbank-Test: Team hinzufügen"):
         st.sidebar.success("Erfolg! Deutschland wurde in die DB geschrieben.")
     except Exception as e:
         st.sidebar.error(f"Fehler: {e}")
+
+import ingest # Importiere dein Skript
+
+if st.sidebar.button("API-Daten synchronisieren"):
+    with st.spinner('Synchronisiere...'):
+        meldung = ingest.fetch_and_save_data()
+        st.sidebar.success(meldung)
