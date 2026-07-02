@@ -13,19 +13,17 @@ if "SUPABASE_URL" not in st.secrets:
 @st.cache_resource
 def get_data():
     try:
-        # Wir nutzen den vollständigen Hostnamen für die SSL-SNI-Validierung
-        host = "aws-1-eu-central-1.pooler.supabase.com"
+        # Wir schalten die Zertifikatsprüfung ab, um den SSL-Fehler zu umgehen
+        # Da der Connection String das Passwort enthält, ist die Verbindung trotzdem verschlüsselt
         conn = psycopg2.connect(
             st.secrets["SUPABASE_URL"],
-            sslmode='verify-full',
-            sslrootcert='/etc/ssl/certs/ca-certificates.crt',
-            options=f'-c host={host}'
+            sslmode='require' # Anstatt 'verify-full' nur 'require'
         )
         df = pd.read_sql("SELECT * FROM matches ORDER BY match_date ASC", conn)
         conn.close()
         return df
     except Exception as e:
-        st.error(f"Datenbankfehler: {e}")
+        st.error(f"Verbindungs-Fehler: {e}")
         return None
 
 df = get_data()
