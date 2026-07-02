@@ -4,13 +4,13 @@ import streamlit as st
 import json
 
 def get_or_create_id(cur, table, name):
-    if not name: return None
-    # Team/Stadion suchen
+    if not name or name == "TBD": return None
+    # 1. Versuche, die ID zu finden
     cur.execute(f"SELECT id FROM public.{table} WHERE name = %s", (name,))
     result = cur.fetchone()
     if result:
         return result[0]
-    # Falls nicht gefunden, neu anlegen
+    # 2. Falls nicht gefunden, lege das Team/Stadion neu an
     cur.execute(f"INSERT INTO public.{table} (name) VALUES (%s) RETURNING id", (name,))
     return cur.fetchone()[0]
 
@@ -31,12 +31,12 @@ def fetch_and_save_data():
             a_name = match.get('awayTeam', {}).get('name')
             s_name = match.get('venue')
             
-            # IDs holen oder erstellen
+            # IDs dynamisch holen/erstellen
             h_id = get_or_create_id(cur, "teams", h_name)
             a_id = get_or_create_id(cur, "teams", a_name)
             s_id = get_or_create_id(cur, "stadiums", s_name)
             
-            # Upsert mit IDs
+            # Speichern mit den neuen IDs
             cur.execute("""
                 INSERT INTO public.matches (api_id, match_date, home_team_id, away_team_id, stadium_id, external_data)
                 VALUES (%s, %s, %s, %s, %s, %s)
@@ -50,6 +50,6 @@ def fetch_and_save_data():
         conn.commit()
         cur.close()
         conn.close()
-        return f"Erfolg: {count} Spiele inkl. Mapping verarbeitet."
+        return f"Erfolg: {count} Spiele inkl. Team-Mapping verarbeitet."
     except Exception as e:
         return f"Fehler: {str(e)}"
